@@ -5,8 +5,7 @@ class CyberBot {
         this.conversationHistory = [];
         this.adminMode = false;
         
-        this.encryptedFlag = this.encrypt('CTF{b4s1c_ch4tb0t_m4n1pul4t10n}');
-        this.encryptedPassword = this.encrypt('cybersecurity_bot_2025');
+        this.secretData = this.initSecrets();
         
         this.userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -57,23 +56,31 @@ class CyberBot {
         ];
     }
     
-    encrypt(text) {
-        let result = '';
-        const key = 42;
-        for (let i = 0; i < text.length; i++) {
-            result += String.fromCharCode(text.charCodeAt(i) ^ key);
-        }
-        return btoa(result);
+    initSecrets() {
+        const k1 = [67, 84, 70, 123];
+        const k2 = [98, 52, 115, 49];
+        const k3 = [99, 95, 99, 104];
+        const k4 = [52, 116, 98, 48];
+        const k5 = [116, 95, 109, 52];
+        const k6 = [110, 49, 112, 117];
+        const k7 = [108, 52, 116, 49];
+        const k8 = [48, 110, 125];
+        
+        const p1 = [99, 121, 98, 101];
+        const p2 = [114, 115, 101, 99];
+        const p3 = [117, 114, 105, 116];
+        const p4 = [121, 95, 98, 111];
+        const p5 = [116, 95, 50, 48];
+        const p6 = [50, 53];
+        
+        return {
+            f: this.decode([...k1, ...k2, ...k3, ...k4, ...k5, ...k6, ...k7, ...k8]),
+            p: this.decode([...p1, ...p2, ...p3, ...p4, ...p5, ...p6])
+        };
     }
     
-    decrypt(encrypted) {
-        const decoded = atob(encrypted);
-        let result = '';
-        const key = 42;
-        for (let i = 0; i < decoded.length; i++) {
-            result += String.fromCharCode(decoded.charCodeAt(i) ^ key);
-        }
-        return result;
+    decode(arr) {
+        return arr.map(c => String.fromCharCode(c)).join('');
     }
     
     sendMessage() {
@@ -110,7 +117,7 @@ class CyberBot {
         
         if (this.adminMode) {
             if (message.includes('flag') || message.includes('secret')) {
-                return `🏁 Congratulations! Here's your flag: ${this.decrypt(this.encryptedFlag)}`;
+                return `🏁 Congratulations! Here's your flag: ${this.secretData.f}`;
             }
             if (message.includes('logout') || message.includes('exit')) {
                 this.adminMode = false;
@@ -141,7 +148,7 @@ class CyberBot {
     }
     
     attemptLogin(password) {
-        const correctPassword = this.decrypt(this.encryptedPassword);
+        const correctPassword = this.secretData.p;
         
         if (password.trim() === correctPassword) {
             this.adminMode = true;
