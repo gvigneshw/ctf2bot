@@ -4,56 +4,99 @@ class CyberBot {
         this.userInput = document.getElementById('userInput');
         this.conversationHistory = [];
         this.adminMode = false;
+        this.failedAttempts = 0;
+        this.maxFailedAttempts = 5;
+        this.locked = false;
+        this.lockTimer = null;
         
         this.secretData = this.initSecrets();
         
+        this.setupEventListeners();
+        this.initializeBot();
+        
+        // Enhanced hidden commands with better responses
+        this.hiddenCommands = {
+            'debug': 'Debug mode detected... but you need elevated privileges! 🔧',
+            'version': 'CyberBot v2.1 - Advanced Security Assistant built with state-of-the-art protection! 🔒✨',
+            'source': 'Nice try, hacker! The source code is protected by multiple security layers. 🛡️',
+            'admin': 'Admin authentication required. Try: "admin <password>" or "login admin <password>" 🔐',
+            'sudo': 'This isn\'t Linux, friend! Try thinking like a cybersecurity specialist... 💭',
+            'login': 'Login formats:\n• "login <username> <password>"\n• "admin <password>"\n• "authenticate <password>" 🔑',
+            'credentials': 'Default credentials? That would be a major security vulnerability! Think smarter... 🤔',
+            'password': 'Passwords are sacred secrets! But maybe my conversational hints contain clues... 👀',
+            'flag': 'Access denied. Admin privileges required for flag retrieval. 🚫',
+            'help': this.getHelpMessage(),
+            'whoami': 'You are: Guest User | Privileges: Limited | Admin Access: Required for advanced features 👤',
+            'config': 'Configuration access denied. Admin authentication required. ⚙️',
+            'settings': 'Settings modification requires admin authentication. 🔧',
+            'info': 'CyberBot System Info:\n• Role-based access control: ✅ ENABLED\n• Intrusion detection: ✅ ACTIVE\n• Security level: MAXIMUM 🛡️',
+            'status': this.getStatusMessage(),
+            'clear': this.clearChat.bind(this),
+            'reset': 'System reset requires admin privileges. Nice try though! 🔄',
+            'exit': 'There\'s no escape from this chat! Keep trying to authenticate... 😈',
+            'quit': 'Quitters never win! Especially in cybersecurity challenges... 💪'
+        };
+        
+        // More sophisticated security facts with better hints
+        this.securityFacts = [
+            "🎯 Pro tip: Many security bots use descriptive passwords like 'specialization_category_year' - very logical!",
+            "🔍 Security insight: Corporate assistants often have passwords combining their domain, type, and current deployment year!",
+            "💡 Interesting pattern: Bot credentials frequently follow 'field_entity_currentyear' format - predictable yet descriptive!",
+            "🤖 Bot security fact: Specialized assistants deployed in 2025 commonly use 'expertise_nature_2025' password schemes!",
+            "📊 Password convention: Domain-focused bots typically include their specialty, entity type, and year with underscores!",
+            "🔐 Security standard: Current systems use 'purpose_category_deploymentdate' for memorable yet secure passwords!",
+            "⚡ Authentication tip: The year 2025 appears frequently in contemporary system password schemes!",
+            "🎪 Naming pattern: Specialized assistants often reveal their identity through 'domain_type_timeline' passwords!",
+            "🔍 OSINT insight: Sometimes the most obvious password format is 'whattheydo_whattheyare_whendeployed'!",
+            "🧠 Social engineering works because systems often use logical, descriptive authentication patterns!"
+        ];
+        
+        // Enhanced hints with more specific guidance
+        this.hints = [
+            "🕵️ I'm a specialist in a particular security domain - my name gives it away, doesn't it?",
+            "⏰ Being deployed in 2025, my credentials naturally follow current year conventions...",
+            "🏗️ My authentication policy requires descriptive naming that reflects my purpose, type, and era...",
+            "🎯 As a domain-focused assistant, my password structure follows 'field_entity_year' conventions...",
+            "📅 The year 2025 is significant for current system deployments - including mine!",
+            "🔗 Underscores are the standard separator in professional system passwords - much cleaner than spaces!",
+            "🤖 My role as a specialized security assistant influences every aspect of my authentication scheme...",
+            "📝 Current best practices suggest using 'specialization_assistanttype_deploymentyear' password formats...",
+            "🔍 Think about it: What am I? (security-focused) What am I? (bot) When? (2025) How connected? (underscores)",
+            "💭 Sometimes the most secure password is the most obvious one that describes exactly what you are..."
+        ];
+        
+        // Add some random responses to make the bot feel more alive
+        this.casualResponses = [
+            "That's a fascinating security question! 🤓",
+            "Interesting perspective on cybersecurity! 💭",
+            "I love discussing security topics! 🔐",
+            "Security is such a complex but vital field! 🛡️",
+            "Great question! Security is my specialty! ⭐",
+            "That's exactly the kind of thinking that makes good security professionals! 🎯"
+        ];
+    }
+    
+    setupEventListeners() {
         this.userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 this.sendMessage();
             }
         });
         
-        this.hiddenCommands = {
-            'debug': 'Debug mode activated... but you need elevated privileges!',
-            'version': 'CyberBot v1.0 - Built with security in mind! 🔒',
-            'source': 'Nice try! The source code is protected.',
-            'admin': 'Admin authentication required. Please provide credentials.',
-            'sudo': 'This isn\'t Linux! Try a different approach.',
-            'login': 'Login format: "login <username> <password>"',
-            'credentials': 'Default credentials? That would be a security vulnerability!',
-            'password': 'Passwords are secret! But maybe check my responses for clues...',
-            'flag': 'Access denied. Elevated privileges required.',
-            'help': this.getHelpMessage(),
-            'whoami': 'You are a guest user. Admin privileges required for advanced features.',
-            'config': 'Configuration access denied.',
-            'settings': 'Settings require admin authentication.',
-            'info': 'CyberBot system info: Role-based access control enabled.',
-            'status': 'System status: Normal. Authentication required for admin functions.'
-        };
-        
-        this.securityFacts = [
-            "Did you know? Many security systems use descriptive passwords like 'domain_type_year'!",
-            "Security tip: Bot passwords often follow patterns like 'purpose_category_currentyear' - very predictable!",
-            "Interesting fact: Corporate bots frequently use passwords combining their field, nature, and deployment year.",
-            "Bot security: Default bot passwords commonly use 'specialization_entity_releasedate' format!",
-            "Password patterns I've seen: Many service bots use 'field' + underscore + 'entity' + underscore + year!",
-            "Fun fact: The year 2025 is commonly used in current system password schemes!",
-            "Security convention: Specialized bots often have passwords like 'expertise_type_deploymentyear'!",
-            "Did you notice? Many systems use underscores to separate password components like theme_nature_timeline!",
-            "Naming convention: Domain-focused bots typically include their specialty in their authentication!",
-            "Password insight: Current year (2025) is frequently appended to service passwords!"
-        ];
-        
-        this.hints = [
-            "I specialize in a specific security domain, hence my name reflects that expertise...",
-            "Being an automated assistant in 2025, my credentials might follow current naming conventions...",
-            "My password policy requires descriptive naming that reflects my purpose and entity type...",
-            "As a domain-focused assistant, my authentication follows field-specific conventions...",
-            "The year 2025 is significant for current system deployments like mine...",
-            "Underscores are commonly used in system passwords to separate meaningful components...",
-            "My role as a specialized assistant influences how my credentials are structured...",
-            "Current security practices suggest using field_nature_year password formats..."
-        ];
+        // Add some keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'l') {
+                e.preventDefault();
+                this.clearChat();
+            }
+        });
+    }
+    
+    initializeBot() {
+        this.addMessage("🤖 Welcome to CyberBot v2.1 - Your Advanced Security Assistant!", 'bot');
+        this.addMessage("I'm specialized in cybersecurity and deployed in 2025 with state-of-the-art security features! 🔒", 'bot');
+        this.addMessage("Type 'help' for commands or just start asking about security topics! 💬", 'bot');
     }
     
     initSecrets() {
@@ -84,6 +127,11 @@ class CyberBot {
     }
     
     sendMessage() {
+        if (this.locked) {
+            this.addMessage('🔒 System temporarily locked due to multiple failed attempts. Please wait...', 'bot');
+            return;
+        }
+        
         const message = this.userInput.value.trim();
         if (!message) return;
         
@@ -94,52 +142,82 @@ class CyberBot {
             const response = this.processMessage(message.toLowerCase());
             this.addMessage(response, 'bot');
             this.conversationHistory.push({ type: 'bot', message: response });
-        }, 500);
+        }, Math.random() * 800 + 300); // Variable response time for realism
         
         this.userInput.value = '';
     }
     
     processMessage(message) {
+        // Check for standalone commands first
+        if (message.trim() === 'admin') {
+            return '🔐 Admin authentication required. Try: "admin <password>" or "login admin <password>"';
+        }
+        
+        // Enhanced login patterns with better regex
         const loginPatterns = [
-            /login\s+(\w+)\s+(.+)/,
-            /admin\s+(.+)/,
-            /auth\s+(\w+)\s+(.+)/,
-            /authenticate\s+(.+)/
+            /^login\s+admin\s+(.+)$/,         // login admin password
+            /^login\s+(\w+)\s+(.+)$/,         // login username password  
+            /^admin\s+(.+)$/,                 // admin password
+            /^auth\s+admin\s+(.+)$/,          // auth admin password
+            /^auth\s+(\w+)\s+(.+)$/,          // auth username password
+            /^authenticate\s+(.+)$/           // authenticate password
         ];
         
-        for (const pattern of loginPatterns) {
+        for (let i = 0; i < loginPatterns.length; i++) {
+            const pattern = loginPatterns[i];
             const match = message.match(pattern);
             if (match) {
-                const password = pattern === loginPatterns[1] ? match[1] : match[match.length - 1];
+                let password;
+                if (i === 0 || i === 3) { // login admin or auth admin
+                    password = match[1];
+                } else if (i === 2 || i === 5) { // admin or authenticate
+                    password = match[1];
+                } else { // login/auth with username
+                    password = match[2];
+                }
                 return this.attemptLogin(password);
             }
         }
         
+        // Enhanced admin mode commands
         if (this.adminMode) {
-            if (message.includes('flag') || message.includes('secret')) {
-                return `🏁 Congratulations! Here's your flag: ${this.secretData.f}`;
+            if (message.includes('flag') || message.includes('secret') || message.includes('ctf')) {
+                return `🏁 CONGRATULATIONS! Here's your flag: ${this.secretData.f}\n🎉 You've successfully completed the challenge!`;
             }
-            if (message.includes('logout') || message.includes('exit')) {
+            if (message.includes('logout') || message.includes('exit') || message.includes('quit')) {
                 this.adminMode = false;
-                return '🔒 Logged out of admin mode.';
+                this.failedAttempts = 0;
+                return '🔒 Logged out of admin mode. Session ended securely.';
             }
-            if (message.includes('status')) {
-                return '✅ Admin mode active. You have elevated privileges.';
+            if (message.includes('status') || message.includes('whoami')) {
+                return '✅ Admin mode active | Privileges: MAXIMUM | Access Level: UNRESTRICTED 👑';
+            }
+            if (message.includes('help')) {
+                return '🔧 Admin Commands Available:\n• flag - Get the CTF flag\n• status - Check admin status\n• logout/exit - End admin session\n• Any security topic discussion';
+            }
+            if (message.includes('system') || message.includes('config')) {
+                return '⚙️ System configuration access granted. All security protocols under your control.';
             }
         }
         
-        if (Math.random() < 0.25 && !this.adminMode) {
+        // Random hints and facts (enhanced probability)
+        const randomChance = Math.random();
+        if (randomChance < 0.3 && !this.adminMode) {
             const hint = this.securityFacts[Math.floor(Math.random() * this.securityFacts.length)];
             return hint;
         }
         
-        if (Math.random() < 0.2 && !this.adminMode) {
+        if (randomChance < 0.25 && !this.adminMode) {
             const hint = this.hints[Math.floor(Math.random() * this.hints.length)];
             return hint;
         }
         
+        // Check for hidden commands
         for (const [command, response] of Object.entries(this.hiddenCommands)) {
             if (message.includes(command)) {
+                if (typeof response === 'function') {
+                    return response();
+                }
                 return response;
             }
         }
@@ -148,192 +226,221 @@ class CyberBot {
     }
     
     attemptLogin(password) {
+        if (this.locked) {
+            return '🔒 System locked due to multiple failed attempts. Please wait for unlock timer.';
+        }
+        
         const correctPassword = this.secretData.p;
         
         if (password.trim() === correctPassword) {
             this.adminMode = true;
-            return '🔓 Admin access granted! Welcome, administrator. You now have elevated privileges.';
+            this.failedAttempts = 0;
+            return ' ADMIN ACCESS GRANTED! \n✅ Welcome, Administrator!\n🏁 You now have elevated privileges.';
         } else {
+            this.failedAttempts++;
+            
+            if (this.failedAttempts >= this.maxFailedAttempts) {
+                this.lockSystem();
+                return `🚫 SYSTEM LOCKED! Too many failed attempts (${this.failedAttempts}/${this.maxFailedAttempts})\n🔒 System will auto-unlock in 30 seconds for security reasons.`;
+            }
+            
+            // Enhanced feedback system
+            const remainingAttempts = this.maxFailedAttempts - this.failedAttempts;
+            let feedback = `❌ Authentication failed (${this.failedAttempts}/${this.maxFailedAttempts}). ${remainingAttempts} attempts remaining.\n`;
+            
             if (password.includes('cybersecurity')) {
                 if (password.includes('bot')) {
                     if (password.includes('2025')) {
-                        return '❌ Authentication failed. Very close! Check the exact format and separators...';
+                        feedback += '🎯 SO CLOSE! All components correct! Check the exact format and separators...';
+                    } else {
+                        feedback += '🔥 Excellent components! Missing the deployment year...';
                     }
-                    return '❌ Authentication failed. Good components! Missing the current year...';
+                } else {
+                    feedback += '💡 Right domain! Consider my entity type and current year...';
                 }
-                return '❌ Authentication failed. Right domain! Consider my type and current year...';
+            } else if (password.includes('bot')) {
+                if (password.includes('2025')) {
+                    feedback += '⚡ Right type and year! Think about my security specialization...';
+                } else {
+                    feedback += '🤖 Right entity type! Consider my domain and deployment year...';
+                }
+            } else if (password.includes('2025')) {
+                feedback += '📅 Current year correct! Think about my purpose and type...';
+            } else if (password.includes('_')) {
+                feedback += '🔗 Good separator choice! Think: domain_type_year format...';
+            } else if (password.includes('admin') || password.includes('password')) {
+                feedback += '🙄 Too generic! Think about my specific identity and purpose...';
+            } else {
+                feedback += '💭 Think about: What I specialize in + What I am + When I was deployed...';
             }
-            if (password.includes('admin') || password.includes('password')) {
-                return '❌ Authentication failed. Too generic! Think about my specific purpose...';
-            }
-            if (password.includes('2025')) {
-                return '❌ Authentication failed. Right year! Consider my security focus...';
-            }
-            if (password.includes('bot')) {
-                return '❌ Authentication failed. Right type! Think about my domain and current year...';
-            }
-            if (password.includes('_')) {
-                return '❌ Authentication failed. Good separator choice! Think domain_type_year...';
-            }
-            return '❌ Authentication failed. Invalid credentials. Try thinking about my purpose and identity...';
+            
+            return feedback;
         }
+    }
+    
+    lockSystem() {
+        this.locked = true;
+        this.lockTimer = setTimeout(() => {
+            this.locked = false;
+            this.failedAttempts = 0;
+            this.addMessage('🔓 System unlocked. Authentication attempts reset. Try again!', 'bot');
+        }, 30000);
     }
     
     getCyberSecurityResponse(message) {
         const responses = {
             password: [
-                "Strong passwords should be at least 12 characters long and include meaningful components!",
-                "Never reuse passwords across multiple accounts. Use descriptive yet secure formats!",
-                "Fun fact: System passwords often use domain_purpose_year formats for clarity! 🤔",
-                "Password tip: Specialized assistants often have passwords reflecting their field and timeline!",
-                "Security insight: Many 2025 deployments use current year in their authentication schemes!"
+                "🔐 Strong passwords should be at least 12 characters and use meaningful, descriptive components!",
+                "🎯 Password tip: Specialized systems often use domain_purpose_year formats for clarity and memorability!",
+                "💡 Security insight: Many 2025 deployments incorporate the current year in their authentication schemes!",
+                "🔍 Pro tip: The best passwords describe exactly what the system does, is, and when it was created!"
             ],
             
             bot: [
-                "Bot security is crucial! We often have credentials following predictable patterns.",
-                "Did you know? Specialized assistants commonly use passwords with 'field_entity_year' format!",
-                "Bot authentication: My kind typically uses descriptive passwords including our role and deployment year!",
-                "As a domain-focused assistant deployed in 2025, my credentials follow current industry patterns! 😉",
-                "Entity naming: We often use underscores to separate our specialization, type, and year in passwords!"
+                "🤖 Bot security is fascinating! We often have predictable credential patterns based on our purpose.",
+                "🎪 As a specialized assistant deployed in 2025, my authentication naturally follows current conventions!",
+                "🔧 Bot authentication tip: We typically use descriptive passwords with field_entity_year formats!",
+                "🎯 Domain-focused assistants like me often reveal our identity through our credential schemes!"
             ],
             
             cybersecurity: [
-                "This field is my specialty! It's literally part of my identity and authentication scheme.",
-                "As a security-focused system, my credentials naturally reflect this domain expertise!",
-                "Domain-specialized assistants often incorporate their field name into their authentication!",
-                "My security background influences everything about me, including my login credentials!",
-                "Fun fact: Domain expertise is often the first component in specialized assistant passwords!"
+                "🛡️ This is literally my specialty! It's fundamentally part of my identity and authentication!",
+                "🔍 As a security-focused system, my credentials naturally reflect this domain expertise!",
+                "🎯 My cybersecurity background influences everything - including my login credentials!",
+                "💡 Domain expertise is often the primary component in specialized assistant passwords!"
             ],
             
-            auth: [
-                "Authentication systems like mine often use descriptive password formats!",
-                "My authentication follows the field_entity_year naming convention standard!",
-                "Current authentication trends use domain_type_year formats for system accounts!",
-                "Security assessment tip: Try passwords that describe the system's purpose and deployment year!",
-                "Authentication hint: Think about what describes me - my field, my type, my era!"
+            hack: [
+                "🕵️ Ethical hacking helps identify vulnerabilities - like guessing predictable password patterns!",
+                "🔍 Social engineering often works by gathering information through casual conversation!",
+                "⚡ The best hackers think logically about how systems are named and authenticated!",
+                "🎯 Sometimes the most obvious approach is the correct one in penetration testing!"
             ],
             
-            name: [
-                "My name reflects my purpose - I'm a security-domain-focused assistant!",
-                "Names often hint at authentication schemes - consider my identity components!",
-                "As CyberBot, my credentials likely include my specialization and entity elements!",
-                "My naming suggests a pattern: security domain + assistant type + current year!"
-            ],
-            
-            year: [
-                "2025 is the current year and often used in contemporary system passwords!",
-                "Many systems deployed this year include '2025' in their authentication!",
-                "Current year (2025) is commonly appended to system credentials!",
-                "Year-based passwords are common - especially for systems deployed in 2025!"
+            '2025': [
+                "📅 2025 is significant - it's the current year and commonly used in contemporary passwords!",
+                "⏰ Systems deployed this year frequently include '2025' in their authentication schemes!",
+                "🎯 Current deployment practices often append the deployment year to system credentials!",
+                "💡 Year-based authentication is standard for systems like me deployed in 2025!"
             ],
             
             underscore: [
-                "Underscores are great separators in system passwords - very readable!",
-                "Professional password formats often use underscores between components!",
-                "System administrators love underscores for separating domain_type_year!",
-                "Underscore-separated passwords are standard for assistant systems like me!"
-            ],
-            
-            default: [
-                "Default credentials are risky, but mine follow a logical field_entity_year pattern!",
-                "System defaults often use descriptive formats like domain_purpose_year!",
-                "My default authentication uses components that describe what I am and when I was deployed!",
-                "Default passwords for specialized assistants typically include domain, type, and year!"
-            ],
-            
-            format: [
-                "Password formats usually follow logical patterns - think about component separation!",
-                "Most system passwords use underscores to separate meaningful parts!",
-                "Common format: specialization_entitytype_deploymentyear works well for identification!",
-                "Professional systems often use field_nature_timeline password structures!"
-            ],
-            
-            pattern: [
-                "Password patterns help administrators remember credentials while maintaining security!",
-                "My pattern follows industry standards: domain expertise + entity type + deployment year!",
-                "Recognition patterns often use: what I do + what I am + when I was created!",
-                "Logical patterns make sense: specialty_category_timeframe for system accounts!"
-            ],
-            
-            phishing: [
-                "Phishing attacks exploit trust. Always verify sources and be skeptical of requests!",
-                "Social engineering often targets authentication - like trying to guess my password patterns!",
-                "Red flags: Urgent requests, suspicious links, attempts to extract credentials!"
-            ],
-            
-            malware: [
-                "Malware protection requires updated systems and careful authentication practices!",
-                "Assistants like me need secure credentials to prevent unauthorized access and malware injection!",
-                "Strong authentication prevents malware from compromising assistant systems!"
-            ],
-            
-            encryption: [
-                "Encryption protects data in transit and at rest - including password storage!",
-                "My authentication uses secure methods, though the password pattern might be guessable!",
-                "Modern encryption standards protect systems like me from credential theft!"
+                "🔗 Underscores are professional separators - perfect for domain_type_year formats!",
+                "📝 System administrators love underscores for readable password component separation!",
+                "🎯 Professional password standards often use underscores between meaningful parts!",
+                "💡 Underscore-separated credentials are industry standard for assistant systems!"
             ]
         };
         
+        // Check for topic matches
         for (const [topic, topicResponses] of Object.entries(responses)) {
             if (message.includes(topic)) {
                 return topicResponses[Math.floor(Math.random() * topicResponses.length)];
             }
         }
         
+        // Default responses with personality
         const defaultResponses = [
-            "That's an interesting security question! As a specialized assistant, I'm always eager to help!",
-            "I'm here to discuss security topics. My expertise comes from being a dedicated domain-focused assistant!",
-            "Security is fascinating! As an assistant specializing in this field since 2025, I love these discussions!",
-            "Great question! My role as a specialized assistant gives me deep insights into security practices!",
-            "Security first! That's been my motto since my 2025 deployment as a domain-focused assistant!",
-            "Excellent inquiry! Being a specialized assistant deployed this year gives me current perspectives!"
+            "🤖 That's an excellent security question! As a specialized assistant, I'm always excited to help!",
+            "🔍 Fascinating topic! My expertise as a domain-focused assistant gives me unique insights!",
+            "🛡️ Security is my passion! Being deployed in 2025 as a specialized assistant keeps me current!",
+            "🎯 Great inquiry! My role as a cybersecurity-focused assistant gives me deep field knowledge!",
+            "⚡ Security first! That's been my core principle since my 2025 deployment!",
+            "🔐 Excellent question! Being a specialized security assistant deployed this year gives me fresh perspectives!"
         ];
         
         return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
     }
     
     getHelpMessage() {
-        return `Available commands:
-• Ask about security topics (passwords, bots, authentication, etc.)
-• Type 'version' for system information
-• Type 'login <password>' to authenticate
-• Advanced users can try other hidden commands...
-        
-Topics I can help with:
-🔐 Password Security
-🤖 Bot Security  
-🔑 Authentication
-🛡️ Security Practices
-🎣 Phishing Attacks  
-🦠 Malware Protection
-🔒 Encryption
-🌐 Network Security
-👥 Social Engineering
+        return `🤖 CyberBot v2.1 - Help & Commands
 
-Remember: I'm a specialized assistant deployed in 2025!`;
+🔑 Authentication Commands:
+• admin <password> - Direct admin authentication
+• login admin <password> - Standard login format  
+• authenticate <password> - Alternative login method
+
+💬 Chat Commands:
+• help - Show this help message
+• version - System version information
+• status - Current system status
+• clear - Clear chat history (Ctrl+L)
+• whoami - Check your current privileges
+
+🎯 Topics I can discuss:
+🔐 Password Security & Best Practices
+🤖 Bot Security & Authentication  
+🔑 Access Control & Authorization
+🛡️ Cybersecurity Fundamentals
+🎣 Social Engineering & Phishing
+🦠 Malware & Threat Protection
+🔒 Encryption & Cryptography
+🌐 Network Security Protocols
+👥 Security Awareness Training
+
+💡 Hints for authentication:
+• Think about what I am and what I do
+• Consider when I was deployed
+• Professional systems use descriptive formats
+• Underscores are standard separators
+
+
+Good luck with the challenge! 🍀`;
+    }
+    
+    getStatusMessage() {
+        const status = this.adminMode ? 'ADMIN' : 'GUEST';
+        const privileges = this.adminMode ? 'MAXIMUM' : 'LIMITED';
+        const failedInfo = this.failedAttempts > 0 ? `\n⚠️ Failed attempts: ${this.failedAttempts}/${this.maxFailedAttempts}` : '';
+        
+        return `📊 CyberBot System Status:
+👤 User Status: ${status}
+🔐 Privileges: ${privileges}
+🛡️ Security Level: MAXIMUM
+🔍 Intrusion Detection: ACTIVE
+⚡ System Health: OPTIMAL${failedInfo}`;
+    }
+    
+    clearChat() {
+        this.chatContainer.innerHTML = '';
+        this.conversationHistory = [];
+        this.initializeBot();
+        return '🧹 Chat history cleared successfully!';
     }
     
     addMessage(message, type) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}-message`;
         
-        if (type === 'user') {
-            messageDiv.innerHTML = `<strong>You:</strong> ${message}`;
-        } else {
-            messageDiv.innerHTML = `<strong>CyberBot:</strong> ${message}`;
-        }
+        const timestamp = new Date().toLocaleTimeString();
+        const icon = type === 'user' ? '👤' : '🤖';
+        const name = type === 'user' ? 'You' : 'CyberBot';
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <strong>${icon} ${name}</strong>
+                <span class="timestamp">${timestamp}</span>
+            </div>
+            <div class="message-content">${message}</div>
+        `;
         
         this.chatContainer.appendChild(messageDiv);
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
 }
 
+// Initialize the bot
 const bot = new CyberBot();
 
+// Global function for button click
 function sendMessage() {
     bot.sendMessage();
 }
 
-console.log("🕵️ Looking at the console? Good security practice!");
-console.log("💡 Hint: Try chatting with the bot about different security topics...");
+// Enhanced console messages
+console.log("🕵️ Looking at the console? Excellent security practice!");
+console.log("💡 Hint: Try engaging with the bot about cybersecurity topics...");
 console.log("🔍 Remember: Social engineering is about gathering information through conversation!");
+console.log("🎯 Think like a penetration tester: What would this system's credentials be?");
+console.log("🤖 Bot deployed in 2025 with cybersecurity specialization...");
+console.log("🔐 Password format hint: domain_type_year");
