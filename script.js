@@ -100,6 +100,11 @@ class CyberBot {
     }
     
     processMessage(message) {
+        // Handle "admin" command alone - prompt for password
+        if (message.trim() === 'admin') {
+            return '🔐 Please enter your admin password using: admin <password>';
+        }
+        
         const loginPatterns = [
             /login\s+(\w+)\s+(.+)/,
             /admin\s+(.+)/,
